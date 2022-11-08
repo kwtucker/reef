@@ -47,10 +47,18 @@ type Pod struct {
 	pod *apiCorev1.Pod
 }
 
+type Container struct {
+	Name  string `json:"name"`
+	Image string `json:"image"`
+}
+
 type PodInfo struct {
-	Node      string `json:"node"`
-	Namespace string `json:"namespace"`
-	Hostname  string `json:"hostname"`
+	Node       string            `json:"node"`
+	Namespace  string            `json:"namespace"`
+	Hostname   string            `json:"hostname"`
+	Ready      bool              `json:"ready"`
+	Containers []Container       `json:"containers"`
+	Labels     map[string]string `json:"labels"`
 }
 
 func (p Pod) Pod() *apiCorev1.Pod {
@@ -59,9 +67,19 @@ func (p Pod) Pod() *apiCorev1.Pod {
 
 func (p Pod) Info() PodInfo {
 	pi := PodInfo{}
+
+	for _, c := range p.pod.Spec.Containers {
+		pi.Containers = append(pi.Containers, Container{
+			Name:  c.Name,
+			Image: c.Image,
+		})
+	}
+
+	pi.Labels = p.pod.Labels
 	pi.Node = p.pod.Spec.NodeName
 	pi.Namespace = p.pod.GetNamespace()
 	pi.Hostname = p.pod.GetName()
+	pi.Ready = p.Ready()
 	if pi.Hostname == "" {
 		pi.Hostname, _ = os.Hostname()
 	}
