@@ -1,6 +1,6 @@
 module github.com/kwtucker/reef
 
-go 1.18
+go 1.25
 
 require (
 	k8s.io/api v0.25.3
