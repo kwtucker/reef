@@ -2,7 +2,6 @@ package kube
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 
 	"k8s.io/client-go/kubernetes"
@@ -38,7 +37,6 @@ func NewClient(ctx context.Context, namespace string) (Client, error) {
 		namespace: namespace,
 		clientSet: clientset,
 	}, nil
-
 }
 
 // GetKubeClientset will create a new kubernetes clientset.
@@ -61,10 +59,15 @@ func GetKubeClientset() (*kubernetes.Clientset, error) {
 
 // GetNamespace returns a namespace name.
 func GetNamespace() (string, error) {
-	ns, err := ioutil.ReadFile(namespacePath)
-	if err != nil {
-		return "", err
+	config, _ := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	ns := config.Namespace
+	if ns == "" {
+		ns = "default"
 	}
+	// ns, err := ioutil.ReadFile(namespacePath)
+	// if err != nil {
+	// 	return "", err
+	// }
 
 	return string(ns), nil
 }
