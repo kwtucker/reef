@@ -1,41 +1,35 @@
 package kube
 
 import (
-	"fmt"
+	"os"
+
 	apiCorev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
-	"os"
 )
 
-func (c Client) RestartPod(hostname string) error {
-
-	if hostname == "" {
-		hostname, _ = os.Hostname()
+func (c *Client) RestartPod(podName string) error {
+	if podName == "" {
+		podName, _ = os.Hostname()
 	}
 
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		p, err := c.Pod(hostname)
-		if err != nil {
-			return err
-		}
-
-		return c.clientSet.CoreV1().Pods(c.namespace).Delete(c.ctx, p.pod.GetName(), metav1.DeleteOptions{})
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		return c.kube.
+			CoreV1().
+			Pods(c.ns).
+			Delete(c.ctx, podName, metav1.DeleteOptions{})
 	})
-
-	if err != nil {
-		return fmt.Errorf("unable to delete %s with error; %w", hostname, err)
-	}
-
-	return nil
 }
 
-func (c Client) Pod(hostname string) (Pod, error) {
-	if hostname == "" {
-		hostname, _ = os.Hostname()
+func (c *Client) Pod(podName string) (Pod, error) {
+	if podName == "" {
+		podName, _ = os.Hostname()
 	}
 
-	p, err := c.clientSet.CoreV1().Pods(c.namespace).Get(c.ctx, hostname, metav1.GetOptions{})
+	p, err := c.kube.
+		CoreV1().
+		Pods(c.ns).
+		Get(c.ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		return Pod{}, err
 	}
@@ -68,10 +62,10 @@ func (p Pod) Pod() *apiCorev1.Pod {
 func (p Pod) Info() PodInfo {
 	pi := PodInfo{}
 
-	for _, c := range p.pod.Spec.Containers {
+	for _, ctr := range p.pod.Spec.Containers {
 		pi.Containers = append(pi.Containers, Container{
-			Name:  c.Name,
-			Image: c.Image,
+			Name:  ctr.Name,
+			Image: ctr.Image,
 		})
 	}
 
@@ -80,9 +74,6 @@ func (p Pod) Info() PodInfo {
 	pi.Namespace = p.pod.GetNamespace()
 	pi.Hostname = p.pod.GetName()
 	pi.Ready = p.Ready()
-	if pi.Hostname == "" {
-		pi.Hostname, _ = os.Hostname()
-	}
 
 	return pi
 }
