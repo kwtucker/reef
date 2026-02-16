@@ -1,7 +1,6 @@
 package kube
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,29 +15,6 @@ import (
 const (
 	namespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 )
-
-type Client struct {
-	ctx  context.Context
-	ns   string
-	kube kubernetes.Interface
-}
-
-func NewClient(ctx context.Context, namespace string) (*Client, error) {
-	kube, err := GetKubeClientset()
-	if err != nil {
-		return nil, err
-	}
-
-	if namespace == "" {
-		namespace = GetNamespace()
-	}
-
-	return &Client{
-		ctx:  ctx,
-		ns:   namespace,
-		kube: kube,
-	}, nil
-}
 
 func GetKubeClientset() (kubernetes.Interface, error) {
 	config, err := rest.InClusterConfig()
